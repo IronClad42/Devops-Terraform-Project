@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        padding: 20px;
+    }
+
+    h1 {
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    a {
+        text-decoration: none;
+        color: #007bff;
+    }
+
+    .container {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        max-width: 800px;
+    }
+
+    label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    input {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    button {
+        background: #007bff;
+        color: #fff;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #0056b3;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    table th, table td {
+        padding: 10px;
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+    }
+
+    table th {
+        background: #007bff;
+        color: #fff;
+    }
+
+    img {
+        border-radius: 5px;
+    }
+
+    .action-btn button {
+        margin: 2px;
+        padding: 5px 10px;
+    }
+
+    .delete-btn {
+        background: #dc3545;
+    }
+
+    .delete-btn:hover {
+        background: #b52a37;
+    }
+</style>
+
+<body>
+   <h1>Home Page Opne Admin kele me ya madhe changes aata</h1>
+
+<form action="admin/submit" method="post" enctype="multipart/form-data">
+
+    Enter Name
+    <input type="text" name="admin_name" id=""><br><br>
+
+    Enter Phone Number
+    <input type="text" name="phone_number" id=""><br><br>
+
+    Enter Email
+    <input type="email" name="admin_email" id=""><br><br>
+
+    Enter admin_image
+    <input type="file" name="admin_image" accept="image/*" id=""><br><br>
+
+    <button>Save</button>
+</form>
+<br><br>
+<table width="40%" border="1">
+    <tr>
+        <th>No.</th>
+        <th>Name</th>
+        <th>Phone Number</th>
+        <th>Email</th>
+        <th>Image</th>
+        <th>Action</th>
+    </tr>
+
+    <% info.map((row , i) => { %>
+        <tr>
+            <td><%- i + 1 %></td>
+            <td><%- row.admin_name %></td>
+            <td><%- row.phone_number %></td>
+            <td><%- row.admin_email %></td>
+            <td>
+                <img src="/<%-row.admin_image%>" width="100px" alt="">
+            </td>
+            <td style="white-space: nowrap;">
+                <a href="/admin/admin_edit/<%-row.adminside_id%>">
+                    <button>Edit</button>
+                </a>
+                <a href="/admin/admin_delete/<%-row.adminside_id%>">
+                    <button>Delete</button>
+                </a>
+            </td>
+        </tr>
+    <% }) %>
+</table> 
+</body>
+</html>

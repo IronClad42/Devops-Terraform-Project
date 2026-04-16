@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      containers:
+      - name: app
+        image: krishnabhujbal/terraform-aws-nodejs:01
+        ports:
+        - containerPort: 1000
+        env:
+        - name: DB_HOST
+          value: "terraform-20260415175542600700000015.cdkw8ieiq8q5.eu-north-1.rds.amazonaws.com"
+        - name: DB_USER
+          value: "krishna"
+        - name: DB_PASSWORD
+          value: "Pass#123"
+        - name: DB_NAME
+          value: "demo"
+        - name: PORT
+          value: "1000"
