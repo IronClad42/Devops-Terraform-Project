@@ -5,10 +5,17 @@ terraform {
       version = "~> 5.0"
       # version = "6.39.0"
     }
+
     random = {
       source  = "hashicorp/random"
       version = "3.8.1"
     }
+  }
+
+  backend "s3" {
+    bucket = "my-static-bucket-12233344445555556666667777777"
+    key    = "terraform.tfstate"
+    region = "eu-north-1"
   }
 }
 
@@ -49,26 +56,25 @@ resource "aws_internet_gateway" "main" {
 }
 
 resource "aws_eip" "nat" {
-  for_each = {
-    for key, subnet in local.subnets :
-    key => subnet if subnet.type == "public"
-  }
-
+  # for_each = {
+  #   for key, subnet in local.subnets :
+  #   key => subnet if subnet.type == "public"
+  # }
   depends_on = [aws_internet_gateway.main]
 }
 
 resource "aws_nat_gateway" "main" {
 
-  for_each = {
-    for key, subnet in local.subnets :
-    key => subnet if subnet.type == "public"
-  }
+  # for_each = {
+  #   for key, subnet in local.subnets :
+  #   key => subnet if subnet.type == "public"
+  # }
 
-  allocation_id = aws_eip.nat[each.key].id
-  subnet_id     = aws_subnet.subnet[each.key].id
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.subnet["public_subnet_1"].id
 
   tags = merge(local.common_tag, {
-    Name = "${each.key}-nat-gateway"
+    Name = "main-nat-gateway"
   })
 }
 
@@ -80,34 +86,55 @@ resource "aws_nat_gateway" "main" {
 #   }
 # }
 
-resource "aws_route_table" "main" {
-  for_each = local.subnets
+resource "aws_route_table" "public" {
 
   vpc_id = aws_vpc.main.id
 
-  dynamic "route" {
-    for_each = [1]
-
-    content {
-      cidr_block = "0.0.0.0/0"
-
-      gateway_id = each.value.type == "public" ? aws_internet_gateway.main.id : null
-      nat_gateway_id = each.value.type == "private" ? (
-        each.key == "private_subnet_3" ? aws_nat_gateway.main["public_subnet_1"].id :
-        each.key == "private_subnet_4" ? aws_nat_gateway.main["public_subnet_2"].id : null
-      ) : null
-    }
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+    
   }
   tags = merge(local.common_tag, {
-    Name = "${each.key}-route-table"
+    Name = "Public-route-table"
   })
 }
 
-resource "aws_route_table_association" "main" {
-  for_each = local.subnets
+resource "aws_route_table" "private" {
+  
+  vpc_id = aws_vpc.main.id
 
-  subnet_id      = aws_subnet.subnet[each.key].id
-  route_table_id = aws_route_table.main[each.key].id
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.main.id
+  }
+
+  tags = merge(local.common_tag , {
+    Name = "private-route-table"
+  })
+}
+
+resource "aws_route_table_association" "public_1" {
+
+  subnet_id      = aws_subnet.subnet["public_subnet_1"].id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "public_2" {
+  
+  subnet_id = aws_subnet.subnet["public_subnet_2"].id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "private_1" {
+  
+  subnet_id = aws_subnet.subnet["private_subnet_3"].id
+  route_table_id = aws_route_table.private.id
+}
+
+resource "aws_route_table_association" "private_2" {
+  subnet_id = aws_subnet.subnet["private_subnet_4"].id
+  route_table_id = aws_route_table.private.id
 }
 
 resource "aws_security_group" "main" {
@@ -117,8 +144,10 @@ resource "aws_security_group" "main" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["13.49.78.243/32"] # YOUR_IP
+    cidr_blocks = ["0.0.0.0/0"] # YOUR_IP
+    # cidr_blocks = ["13.49.246.145/32"] # YOUR_IP
   } # SSH
+  
 
   ingress {
     from_port   = 80
@@ -153,6 +182,22 @@ resource "aws_security_group" "main" {
   })
 }
 
+resource "aws_security_group" "main_aws_load_balancer" {
+  
+  vpc_id = aws_vpc.main.id
+
+  ingress {
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.common_tag , {
+    Name = "Devops-Projects-aws-load_balancer-SG"
+  })
+}
+
 resource "aws_security_group" "db_sg" {
 
   vpc_id = aws_vpc.main.id
@@ -176,11 +221,17 @@ resource "aws_security_group" "db_sg" {
   })
 }
 
-resource "aws_instance" "main" {
+resource "aws_instance" "main_public_instances" {
+
+  count = 2
+
   ami                         = "ami-077d1b9f9a1902bbc"
   instance_type               = "t3.micro"
   vpc_security_group_ids      = [aws_security_group.main.id]
-  subnet_id                   = aws_subnet.subnet["public_subnet_1"].id
+  subnet_id = element([
+    aws_subnet.subnet["public_subnet_1"].id,
+    aws_subnet.subnet["public_subnet_2"].id
+  ], count.index)
   associate_public_ip_address = true
   key_name                    = "linux"
   depends_on                  = [aws_security_group.main]
@@ -193,20 +244,30 @@ resource "aws_instance" "main" {
                   sudo yum install nginx -y
                   sudo yum install nodejs -y
                   sudo yum install mysql-server -y
-                  sudo yum install java-17-amazon-corretto -y
+                  sudo dnf update -y
+                  sudo dnf install java-17-amazon-corretto -y
+                  sudo dnf install java-21-amazon-corretto -y
                   sudo wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins.io/redhat-stable/jenkins.repo
                   sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-                  sudo yum install jenkins -y
+                  sudo dnf install jenkins -y
                   
-                  sudo systemctl start docker
-                  sudo systemctl enable docker
-                  # sudo systemctl status docker
-                  sudo systemctl start nginx
-                  sudo systemctl enable nginx
-                  # sudo systemctl status nginx
-                  sudo systemctl start jenkins
-                  sudo systemctl enable jenkins
-                  # sudo systemctl status jenkins
+                  sudo mkdir -p /var/jenkins_temp
+                  sudo chown 755 /var/jenkins_temp
+                  sudo mkdir -p /etc/systemd/system/jenkins.service.d/
+
+                  cat <<EOF | sudo tee /etc/systemd/system/jenkins.service.d/override.conf
+                  [Service]
+                  Environment="JAVA_OPTS=-Djava.io.temdir=/var/jenkins_temp"
+                  EOF
+
+                  sudo systemctl daemon-reload
+                  sudo systemctl daemon-reexec
+                  sudo systemctl enable docker nginx jenkins
+                  sudo systemctl start docker nginx jenkins
+
+                  sudo systemctl daemon-reload
+                  sudo systemctl daemon-reexec
+                  sudo systemctl restart jenkins    
                 EOf
 
 
@@ -226,7 +287,27 @@ resource "aws_instance" "main" {
     }
   }
   tags = merge(local.common_tag, {
-    Name = "My-Devops-Projects"
+    Name = "My-Devops-Projects-Public-Instance-${count.index + 1}"
+  })
+}
+
+resource "aws_instance" "main_private_instances" {
+  count = 2
+  ami = "ami-077d1b9f9a1902bbc"
+  instance_type = "t3.micro"
+
+  subnet_id = element([
+    aws_subnet.subnet["private_subnet_3"].id,
+    aws_subnet.subnet["private_subnet_4"].id
+  ], count.index)
+
+  vpc_security_group_ids = [aws_security_group.main.id]
+
+  associate_public_ip_address = false
+  key_name = "linux"
+
+  tags = merge(local.common_tag, {
+    Name = "My-Devops-Projects-Private-Instance-${count.index + 1}"
   })
 }
 
@@ -247,10 +328,10 @@ resource "aws_launch_template" "main" {
                           sudo yum install nginx -y
                           sudo yum install nodejs -y
                           sudo yum install mysql-server -y
-                          sudo yum install java-17-amazon-corretto -y
+                          sudo dnf install java-21-amazon-corretto -y
                           sudo wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins.io/redhat-stable/jenkins.repo
                           sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-                          sudo yum install jenkins -y
+                          # sudo yum install jenkins -y
                           
                           sudo systemctl start docker
                           sudo systemctl enable docker
@@ -259,7 +340,7 @@ resource "aws_launch_template" "main" {
                           sudo systemctl enable nginx
                           # sudo systemctl status nginx
                           sudo systemctl start jenkins
-                          sudo systemctl enable jenkins
+                          # sudo systemctl enable jenkins
                           # sudo systemctl status jenkins
                       EOF
   )
@@ -283,6 +364,10 @@ resource "aws_lb_target_group" "main" {
     path     = "/"
     port     = "traffic-port"
     protocol = "HTTP"
+    interval = "30"
+    timeout = 5
+    healthy_threshold = 2
+    unhealthy_threshold = 2
   }
 
   tags = merge(local.common_tag, {
@@ -321,9 +406,9 @@ resource "aws_lb_listener" "main" {
 }
 
 resource "aws_autoscaling_group" "main" {
-  desired_capacity = 2
-  max_size         = 4
+  desired_capacity = 1
   min_size         = 1
+  max_size         = 2
 
   vpc_zone_identifier = [
     aws_subnet.subnet["private_subnet_3"].id,
@@ -412,7 +497,7 @@ module "eks" {
   version = "~> 20.0"
 
   cluster_name    = "my-eks"
-  cluster_version = "1.29"
+  cluster_version = "1.30"
 
   vpc_id = aws_vpc.main.id
 
@@ -422,13 +507,16 @@ module "eks" {
   ]
 
   cluster_endpoint_public_access = true
+  cluster_endpoint_private_access = true
   enable_irsa                    = true
+
+  create_cloudwatch_log_group = false
 
   eks_managed_node_groups = {
     default = {
-      desired_size   = 2
+      desired_size   = 1
       instance_types = ["t3.micro"]
-
+      ami_type = "AL2_x86_64"
     }
   }
 
@@ -443,15 +531,15 @@ resource "random_id" "main" {
   byte_length = 8
 }
 
-resource "aws_s3_bucket" "main" {
-  bucket = "devops-project-${random_id.main.hex}"
-}
+# resource "aws_s3_bucket" "main" {
+#   bucket = "devops-project-my-static-bucket-12233344445555556666667777777"
+# }
 
-resource "aws_s3_object" "main" {
-  bucket = aws_s3_bucket.main.bucket
-  source = "./terraform.tfstate"
-  key    = "terraform.tfstate"
-}
+# resource "aws_s3_object" "main" {
+#   bucket = aws_s3_bucket.main.bucket
+#   source = "./terraform.tfstate"
+#   key    = "terraform.tfstate"
+# }
 
 resource "aws_sns_topic" "main" {
   name = "Devops-Alert-Topic"
@@ -468,13 +556,13 @@ resource "aws_cloudwatch_metric_alarm" "main" {
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
   metric_name         = "CPUUtilization"
-  namespace           = "AWS/EC2"
+  namespace           = "AWS/AutoScaling"
   period              = 60
   statistic           = "Average"
   threshold           = 70
 
   dimensions = {
-    InstanceId = aws_instance.main.id
+    InstanceId = aws_instance.main_public_instances[0].id
   }
 
   alarm_actions = [aws_sns_topic.main.arn]
