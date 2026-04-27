@@ -1,21 +1,59 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE = "krishnabhujbal/terraform-aws-nodejs"
+        TAG = "${BUILD_NUMBER}"
+    }
+
     stages {
-        stage('Build') {
+
+        stage('Build Docker Image') {
             steps {
-                sh 'docker build -t yourdocker/app .'
+                dir('App'){
+                    sh "docker build -t ${DOCKER_IMAGE}:${TAG} ."
+                }
             }
         }
-        stage('Push') {
+
+        stage('Docker Login') {
             steps {
-                sh 'docker push yourdocker/app'
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-creds',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                }
             }
         }
-        stage('Deploy') {
+
+        stage('Push Image') {
             steps {
-                sh 'kubectl apply -f k8s/'
+                sh "docker push ${DOCKER_IMAGE}:${TAG}"
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh """
+                sed -i 's|IMAGE|${DOCKER_IMAGE}:${TAG}|g' k8s/deployment.yml
+                kubectl apply -f k8s/
+                """
             }
         }
     }
-}
+
+    post {
+        success {
+            echo 'Deployment Successful 🚀'
+        }
+        failure {
+            emailext(
+                to: 'krishnabhujbal176@gmail.com',
+                subject: '❌ Jenkins Build Failed',
+                body: "Build Failed: ${env.BUILD_URL}"
+            )
+        }
+    }
+} 
