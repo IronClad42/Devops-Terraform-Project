@@ -8,6 +8,12 @@ pipeline {
 
     stages {
 
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/IronClad42/Devops-Terraform-Project.git'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 dir('App'){
@@ -34,11 +40,12 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
+      stage('Deploy to Kubernetes') {
             steps {
                 sh """
-                sed -i 's|IMAGE|${DOCKER_IMAGE}:${TAG}|g' k8s/deployment.yml
-                kubectl apply -f k8s/
+                export KUBECONFIG=/var/lib/jenkins/.kube/config
+                sed -i 's|IMAGE|${DOCKER_IMAGE}:${TAG}|g' K8s/deployment.yml
+                kubectl apply -f K8s/
                 """
             }
         }
