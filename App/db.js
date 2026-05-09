@@ -1,8 +1,8 @@
 require('dotenv').config();
 const mysql = require("mysql2/promise");
-const util = require("util");
+// const util = require("util");
 
-const conn = mysql.createPool({
+const exe = mysql.createPool({
     connectionLimit: 10,
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -15,6 +15,6 @@ const conn = mysql.createPool({
 
 });
 
-const exe = util.promisify(conn.query).bind(conn);
+// const exe = util.promisify(conn.query).bind(conn);
 
 module.exports = exe;
