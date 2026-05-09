@@ -207,7 +207,8 @@ resource "aws_security_group" "db_sg" {
     to_port         = 3306
     protocol        = "tcp"
     security_groups = [ 
-      module.eks.cluster_security_group_id
+      module.eks.cluster_security_group_id,
+      aws_security_group.main.id
      ]
   }
 
