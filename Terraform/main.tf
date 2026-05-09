@@ -327,19 +327,28 @@ resource "aws_launch_template" "main" {
                           sudo yum install git -y
                           sudo yum install nginx -y
                           sudo yum install nodejs -y
+                          sudo npm install -g pm2
+                          sudo pm2 start index.js
                           sudo yum install mysql-server -y
                           sudo dnf install java-21-amazon-corretto -y
                           sudo wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins.io/redhat-stable/jenkins.repo
                           sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
                           # sudo yum install jenkins -y
-                          
+                          curl -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.30.0/2024-01-04/bin/linux/amd64/kubectl
+                          sudo chmod +x kubectl
+                          sudo mv kubectl /usr/local/bin/
+                          # kubectl version --client
+
                           sudo systemctl start docker
                           sudo systemctl enable docker
+                          sudo usermod -aG docker jenkins
+                          sudo systemctl restart docker
                           # sudo systemctl status docker
                           sudo systemctl start nginx
                           sudo systemctl enable nginx
                           # sudo systemctl status nginx
                           sudo systemctl start jenkins
+                          sudo systemctl restart jenkins
                           # sudo systemctl enable jenkins
                           # sudo systemctl status jenkins
                       EOF
@@ -508,17 +517,22 @@ module "eks" {
 
   cluster_endpoint_public_access = true
   cluster_endpoint_private_access = true
+
   enable_irsa                    = true
 
   create_cloudwatch_log_group = false
 
+  eks_managed_node_group_defaults = {
+    iam_role_attach_cni_policy = true
+  }
+
   eks_managed_node_groups = {
     default = {
-      desired_size   = 1
+      desired_size = 2
       min_size = 1
       max_size = 3
       
-      instance_types = ["t3.micro"]
+      instance_types = ["t3.medium"]
       ami_type = "AL2_x86_64"
     }
   }
@@ -528,6 +542,31 @@ module "eks" {
     Project     = "DevOps"
     Name        = "My-Devops-Project-EKS"
   })
+}
+
+# resource "aws_iam_user_policy_attachment" "eks_admin" {
+  
+#   user = "tf-user"
+#   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterAdminPolicy"
+# }
+
+resource "aws_eks_access_entry" "tf_user_access" {
+  
+  cluster_name = module.eks.cluster_name
+  principal_arn = "arn:aws:iam::084375574576:user/tf-user"
+  type = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "tf_user_admin" {
+  
+  cluster_name = module.eks.cluster_name
+  principal_arn = "arn:aws:iam::084375574576:user/tf-user"
+
+  policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
 }
 
 resource "random_id" "main" {
