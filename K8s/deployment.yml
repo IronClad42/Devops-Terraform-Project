@@ -21,7 +21,7 @@ spec:
         - name: DB_HOST
           value: "terraform-20260509044756547900000019.cdkw8ieiq8q5.eu-north-1.rds.amazonaws.com"
         - name: DB_USER
-          value: "krishna"
+          value: "admin"
         - name: DB_PASSWORD
           value: "Pass#123"
         - name: DB_NAME
