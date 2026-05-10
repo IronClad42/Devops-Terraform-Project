@@ -50,11 +50,11 @@ stages {
 
                 ls -la
 
-                ls -la k8s
+                ls -la 
 
-                sed -i 's|IMAGE|${DOCKER_IMAGE}:${TAG}|g' k8s/deployment.yml
+                sed -i 's|IMAGE|${DOCKER_IMAGE}:${TAG}|g' deployment.yml
 
-                kubectl apply -f k8s/
+                kubectl apply -f .
                 """
             }
         }
