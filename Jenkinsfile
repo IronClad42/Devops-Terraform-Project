@@ -43,9 +43,6 @@ pipeline {
       stage('Deploy to Kubernetes') {
             steps {
                 sh """
-                ls -la
-                ls -ls k8s
-                
                 sed -i 's|IMAGE|${DOCKER_IMAGE}:${TAG}|g' k8s/deployment.yml
                 kubectl apply -f k8s/
                 """

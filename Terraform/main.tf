@@ -253,7 +253,7 @@ resource "aws_instance" "main_public_instances" {
                   sudo dnf install java-17-amazon-corretto -y
                   sudo dnf install java-21-amazon-corretto -y
                   sudo dnf install awscli -y
-
+                  sudo yum install mailx -y
                   
                   sudo wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins.io/redhat-stable/jenkins.repo
                   sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
@@ -370,7 +370,7 @@ resource "aws_launch_template" "main" {
                           sudo dnf install java-17-amazon-corretto -y
                           sudo dnf install java-21-amazon-corretto -y
                           sudo dnf install awscli -y
-
+                          sudo yum install mailx -y
                           sudo wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins.io/redhat-stable/jenkins.repo
                           sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
                           sudo dnf install jenkins -y
