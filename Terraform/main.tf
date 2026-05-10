@@ -207,10 +207,14 @@ resource "aws_security_group" "db_sg" {
     to_port   = 3306
     protocol  = "tcp"
     security_groups = [
-      module.eks.cluster_security_group_id,
+      # module.eks.cluster_security_group_id,
+      module.eks.node_security_group_id,
       aws_security_group.main.id
     ]
+
+    
   }
+
 
   egress {
     from_port   = 0
@@ -223,6 +227,8 @@ resource "aws_security_group" "db_sg" {
     Name = "Devops-Projects-DB-SG"
   })
 }
+
+
 
 resource "aws_instance" "main_public_instances" {
 
@@ -596,6 +602,17 @@ module "eks" {
   eks_managed_node_group_defaults = {
     iam_role_attach_cni_policy = true
   }
+
+  node_security_group_additional_rules = {
+  ingress_mysql = {
+    description              = "Allow MySQL"
+    protocol                 = "tcp"
+    from_port                = 3306
+    to_port                  = 3306
+    type                     = "egress"
+    source_security_group_id = aws_security_group.db_sg.id
+  }
+}
 
   eks_managed_node_groups = {
     default = {
