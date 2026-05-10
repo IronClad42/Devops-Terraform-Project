@@ -93,7 +93,7 @@ resource "aws_route_table" "public" {
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.main.id
-    
+
   }
   tags = merge(local.common_tag, {
     Name = "Public-route-table"
@@ -101,15 +101,15 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route_table" "private" {
-  
+
   vpc_id = aws_vpc.main.id
 
   route {
-    cidr_block = "0.0.0.0/0"
+    cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.main.id
   }
 
-  tags = merge(local.common_tag , {
+  tags = merge(local.common_tag, {
     Name = "private-route-table"
   })
 }
@@ -121,19 +121,19 @@ resource "aws_route_table_association" "public_1" {
 }
 
 resource "aws_route_table_association" "public_2" {
-  
-  subnet_id = aws_subnet.subnet["public_subnet_2"].id
+
+  subnet_id      = aws_subnet.subnet["public_subnet_2"].id
   route_table_id = aws_route_table.public.id
 }
 
 resource "aws_route_table_association" "private_1" {
-  
-  subnet_id = aws_subnet.subnet["private_subnet_3"].id
+
+  subnet_id      = aws_subnet.subnet["private_subnet_3"].id
   route_table_id = aws_route_table.private.id
 }
 
 resource "aws_route_table_association" "private_2" {
-  subnet_id = aws_subnet.subnet["private_subnet_4"].id
+  subnet_id      = aws_subnet.subnet["private_subnet_4"].id
   route_table_id = aws_route_table.private.id
 }
 
@@ -147,7 +147,7 @@ resource "aws_security_group" "main" {
     cidr_blocks = ["0.0.0.0/0"] # YOUR_IP
     # cidr_blocks = ["13.49.246.145/32"] # YOUR_IP
   } # SSH
-  
+
 
   ingress {
     from_port   = 80
@@ -183,17 +183,17 @@ resource "aws_security_group" "main" {
 }
 
 resource "aws_security_group" "main_aws_load_balancer" {
-  
+
   vpc_id = aws_vpc.main.id
 
   ingress {
-    from_port = 80
-    to_port = 80
-    protocol = "tcp"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = merge(local.common_tag , {
+  tags = merge(local.common_tag, {
     Name = "Devops-Projects-aws-load_balancer-SG"
   })
 }
@@ -203,13 +203,13 @@ resource "aws_security_group" "db_sg" {
   vpc_id = aws_vpc.main.id
 
   ingress {
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [ 
+    from_port = 3306
+    to_port   = 3306
+    protocol  = "tcp"
+    security_groups = [
       module.eks.cluster_security_group_id,
       aws_security_group.main.id
-     ]
+    ]
   }
 
   egress {
@@ -228,9 +228,9 @@ resource "aws_instance" "main_public_instances" {
 
   count = 2
 
-  ami                         = "ami-077d1b9f9a1902bbc"
-  instance_type               = "t3.micro"
-  vpc_security_group_ids      = [aws_security_group.main.id]
+  ami                    = "ami-077d1b9f9a1902bbc"
+  instance_type          = "t3.micro"
+  vpc_security_group_ids = [aws_security_group.main.id]
   subnet_id = element([
     aws_subnet.subnet["public_subnet_1"].id,
     aws_subnet.subnet["public_subnet_2"].id
@@ -242,26 +242,112 @@ resource "aws_instance" "main_public_instances" {
   user_data = <<-EOf
                   #!/bin/bash
                   sudo yum update -y
+                  sudo dnf update -y
                   sudo yum install docker -y
                   sudo yum install git -y
                   sudo yum install nginx -y
                   sudo yum install nodejs -y
-                  sudo yum install mysql-server -y
-                  sudo dnf update -y
+                  sudo yum install mariadb105-server -y
+
+                  
                   sudo dnf install java-17-amazon-corretto -y
                   sudo dnf install java-21-amazon-corretto -y
+                  sudo dnf install awscli -y
+
+                  
                   sudo wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins.io/redhat-stable/jenkins.repo
                   sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
                   sudo dnf install jenkins -y
                   
                   sudo mkdir -p /var/jenkins_temp
-                  sudo chown 755 /var/jenkins_temp
+                  sudo chmod 755 /var/jenkins_temp
+                  
                   sudo mkdir -p /etc/systemd/system/jenkins.service.d/
 
                   cat <<EOF | sudo tee /etc/systemd/system/jenkins.service.d/override.conf
                   [Service]
                   Environment="JAVA_OPTS=-Djava.io.temdir=/var/jenkins_temp"
                   EOF
+
+                  curl -LO \
+                  "https://dl.k8s.io/release/$(curl -L -s \
+                  https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+                  chmod +x kubectl
+
+                  sudo mv kubectl /usr/local/bin/
+
+                  # aws eks update-kubeconfig --region eu-north-1 --name my-eks
+                  # aws eks update-kubeconfig --region eu-north-1 --name my-eks
+                  # export KUBECONFIG=/var/lib/jenkins/.kube/config
+                  # sudo su - jenkins
+                  # kubectl get pods
+                  # sudo chmod 666 /var/run/docker.sock
+                  # sudo usermod -aG docker jenkins
+                  # which aws
+                  # sudo dnf install awscli -y
+                  # sudo mkdir -p /var/lib/jenkins/.kube
+                  # sudo cp /home/ec2-user/.kube/config /var/lib/jenkins/.kube/config
+                  # sudo chown -R jenkins:jenkins /var/lib/jenkins/.kube
+                  # sudo su - jenkins
+                  # kubectl get pods
+                  # sudo chmod 666 /var/run/docker.sock
+                  # sudo usermod -aG docker jenkins
+                  # kubectl get pods
+                  # sudo usermod -aG docker jenkins
+                  # sudo chmod 644 /var/lib/jenkins/.kube/config
+                  # sudo chmod 755 /var/lib/jenkins/.kube
+                  # ls -l /var/lib/jenkins/.kube/
+                  # sudo su - jenkins
+                  # kubectl get pods
+                  # sudo chmod 666 /var/run/docker.sock
+                  # sudo usermod -aG docker jenkins
+                  # sudo chmod 666 /var/run/docker.sock
+                  # sudo su - jenkins
+                  # kubectl get pods
+                  # sudo chmod 666 /var/run/docker.sock
+                  # sudo usermod -aG docker jenkins
+                  # aws configure
+                  # AWS Access Key ID [None]: AKIARHJJNDAYI4MKNZWJ
+                  # AWS Secret Access Key [None]: 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
+                  # Default region name [None]: eu-north-1
+                  # Default output format [None]: json
+                  # aws sts get-caller-identity
+                  # aws eks update-kubeconfig --region eu-north-1 --name my-eks
+                  # sudo su - jenkins
+                  # kubectl get pods
+                  # aws configure
+                  # aws sts get-caller-identity
+                  # sudo mkdir -p /var/lib/jenkins/.aws
+                  # sudo cp /home/ec2-user/.aws/credentials /var/lib/jenkins/.aws/
+                  # sudo cp /home/ec2-user/.aws/config /var/lib/jenkins/.aws/
+                  # sudo chown -R jenkins:jenkins /var/lib/jenkins/.aws
+                  # sudo chmod 600 /var/lib/jenkins/.aws/credentials
+                  # sudo chmod 600 /var/lib/jenkins/.aws/config
+                  # kubectl get nodes
+                  # sudo su - jenkins
+                  # kubectl get pods
+                  # sudo chmod 666 /var/run/docker.sock
+                  # sudo usermod -aG docker jenkins
+
+                  sudo usermod -aG docker ec2-user
+                  sudo usermod -aG docker jenkins
+                  sudo chmod 666 /var/run/docker.sock
+                  
+                  aws eks update-kubeconfig \
+                  --region eu-north-1 \
+                  --name my-eks
+
+                  sudo mkdir -p /var/lib/jenkins/.kube
+                  sudo cp /root/.kube/config \ /var/lib/jenkins/.kube/config
+                  sudo chown -R jenkins:jenkins \ /var/lib/jenkins/.kube
+                  sudo chmod 755 /var/lib/jenkins/.kube
+                  sudo chmod 644 \ /var/lib/jenkins/.kube/config
+
+                  kubectl get nodes
+
+                  sudo -u jenkins kubectl get nodes
+
 
                   sudo systemctl daemon-reload
                   sudo systemctl daemon-reexec
@@ -270,6 +356,7 @@ resource "aws_instance" "main_public_instances" {
 
                   sudo systemctl daemon-reload
                   sudo systemctl daemon-reexec
+                  sudo systemctl restart docker
                   sudo systemctl restart jenkins    
                 EOf
 
@@ -295,8 +382,8 @@ resource "aws_instance" "main_public_instances" {
 }
 
 resource "aws_instance" "main_private_instances" {
-  count = 2
-  ami = "ami-077d1b9f9a1902bbc"
+  count         = 2
+  ami           = "ami-077d1b9f9a1902bbc"
   instance_type = "t3.micro"
 
   subnet_id = element([
@@ -307,7 +394,7 @@ resource "aws_instance" "main_private_instances" {
   vpc_security_group_ids = [aws_security_group.main.id]
 
   associate_public_ip_address = false
-  key_name = "linux"
+  key_name                    = "linux"
 
   tags = merge(local.common_tag, {
     Name = "My-Devops-Projects-Private-Instance-${count.index + 1}"
@@ -330,30 +417,64 @@ resource "aws_launch_template" "main" {
                           sudo yum install git -y
                           sudo yum install nginx -y
                           sudo yum install nodejs -y
-                          sudo npm install -g pm2
-                          sudo pm2 start index.js
-                          sudo yum install mysql-server -y
+                          sudo yum install mariadb105-server -y
+                          sudo dnf update -y
+
+                          sudo dnf install java-17-amazon-corretto -y
                           sudo dnf install java-21-amazon-corretto -y
+                          sudo dnf install awscli -y
+
                           sudo wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins.io/redhat-stable/jenkins.repo
                           sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-                          # sudo yum install jenkins -y
-                          curl -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.30.0/2024-01-04/bin/linux/amd64/kubectl
-                          sudo chmod +x kubectl
+                          sudo dnf install jenkins -y
+
+                          sudo mkdir -p /var/jenkins_temp
+                          sudo chmod 755 /var/jenkins_temp
+                          sudo mkdir -p /etc/systemd/system/jenkins.service.d/
+
+                          cat <<EOT | sudo tee /etc/systemd/system/jenkins.service.d/override.conf
+                          [Service]
+                          Environment="JAVA_OPTS=-Djava.io.tmpdir=/var/jenkins_temp"
+                          EOT
+
+                          curl -LO "https://dl.k8s.io/release/\$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+                          chmod +x kubectl
                           sudo mv kubectl /usr/local/bin/
-                          # kubectl version --client
+
+                          sudo usermod -aG docker ec2-user
+                          sudo usermod -aG docker jenkins
+
+                          aws eks update-kubeconfig \
+                          --region eu-north-1 \
+                          --name my-eks
+
+                          sudo mkdir -p /var/lib/jenkins/.kube
+
+                          sudo cp /root/.kube/config /var/lib/jenkins/.kube/config
+
+                          sudo chown -R jenkins:jenkins /var/lib/jenkins/.kube
+
+                          sudo chmod 755 /var/lib/jenkins/.kube
+                          sudo chmod 644 /var/lib/jenkins/.kube/config
+
+                          kubectl get nodes
+
+                          sudo -u jenkins kubectl get nodes
+
+                          sudo systemctl daemon-reload
+                          sudo systemctl daemon-reexec
+
+                          sudo systemctl enable docker
+                          sudo systemctl enable nginx
+                          sudo systemctl enable jenkins
 
                           sudo systemctl start docker
-                          sudo systemctl enable docker
-                          sudo usermod -aG docker jenkins
-                          sudo systemctl restart docker
-                          # sudo systemctl status docker
                           sudo systemctl start nginx
-                          sudo systemctl enable nginx
-                          # sudo systemctl status nginx
                           sudo systemctl start jenkins
+
+                          sudo systemctl restart docker
                           sudo systemctl restart jenkins
-                          # sudo systemctl enable jenkins
-                          # sudo systemctl status jenkins
                       EOF
   )
 
@@ -373,12 +494,12 @@ resource "aws_lb_target_group" "main" {
   vpc_id   = aws_vpc.main.id
 
   health_check {
-    path     = "/"
-    port     = "traffic-port"
-    protocol = "HTTP"
-    interval = "30"
-    timeout = 5
-    healthy_threshold = 2
+    path                = "/"
+    port                = "traffic-port"
+    protocol            = "HTTP"
+    interval            = "30"
+    timeout             = 5
+    healthy_threshold   = 2
     unhealthy_threshold = 2
   }
 
@@ -518,10 +639,10 @@ module "eks" {
     aws_subnet.subnet["private_subnet_4"].id
   ]
 
-  cluster_endpoint_public_access = true
+  cluster_endpoint_public_access  = true
   cluster_endpoint_private_access = true
 
-  enable_irsa                    = true
+  enable_irsa = true
 
   create_cloudwatch_log_group = false
 
@@ -532,11 +653,11 @@ module "eks" {
   eks_managed_node_groups = {
     default = {
       desired_size = 2
-      min_size = 1
-      max_size = 3
-      
+      min_size     = 1
+      max_size     = 3
+
       instance_types = ["t3.medium"]
-      ami_type = "AL2_x86_64"
+      ami_type       = "AL2_x86_64"
     }
   }
 
@@ -548,21 +669,21 @@ module "eks" {
 }
 
 # resource "aws_iam_user_policy_attachment" "eks_admin" {
-  
+
 #   user = "tf-user"
 #   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterAdminPolicy"
 # }
 
 resource "aws_eks_access_entry" "tf_user_access" {
-  
-  cluster_name = module.eks.cluster_name
+
+  cluster_name  = module.eks.cluster_name
   principal_arn = "arn:aws:iam::084375574576:user/tf-user"
-  type = "STANDARD"
+  type          = "STANDARD"
 }
 
 resource "aws_eks_access_policy_association" "tf_user_admin" {
-  
-  cluster_name = module.eks.cluster_name
+
+  cluster_name  = module.eks.cluster_name
   principal_arn = "arn:aws:iam::084375574576:user/tf-user"
 
   policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
