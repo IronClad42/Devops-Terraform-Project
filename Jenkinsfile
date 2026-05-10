@@ -43,21 +43,23 @@ stages {
 
     stage('Deploy to Kubernetes') {
         steps {
-
             dir('App') {
 
                 sh """
                 pwd
+
                 ls -la
-                ls -la k8s
 
-                sed -i 's|IMAGE|${DOCKER_IMAGE}:${TAG}|g' k8s/deployment.yml
+                ls -la K8s
 
-                kubectl apply -f k8s/
+                sed -i 's|IMAGE|${DOCKER_IMAGE}:${TAG}|g' K8s/deployment.yml
+
+                kubectl apply -f K8s/
                 """
             }
         }
     }
+
 }
 
 post {
