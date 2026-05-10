@@ -277,59 +277,6 @@ resource "aws_instance" "main_public_instances" {
 
                   sudo mv kubectl /usr/local/bin/
 
-                  # aws eks update-kubeconfig --region eu-north-1 --name my-eks
-                  # aws eks update-kubeconfig --region eu-north-1 --name my-eks
-                  # export KUBECONFIG=/var/lib/jenkins/.kube/config
-                  # sudo su - jenkins
-                  # kubectl get pods
-                  # sudo chmod 666 /var/run/docker.sock
-                  # sudo usermod -aG docker jenkins
-                  # which aws
-                  # sudo dnf install awscli -y
-                  # sudo mkdir -p /var/lib/jenkins/.kube
-                  # sudo cp /home/ec2-user/.kube/config /var/lib/jenkins/.kube/config
-                  # sudo chown -R jenkins:jenkins /var/lib/jenkins/.kube
-                  # sudo su - jenkins
-                  # kubectl get pods
-                  # sudo chmod 666 /var/run/docker.sock
-                  # sudo usermod -aG docker jenkins
-                  # kubectl get pods
-                  # sudo usermod -aG docker jenkins
-                  # sudo chmod 644 /var/lib/jenkins/.kube/config
-                  # sudo chmod 755 /var/lib/jenkins/.kube
-                  # ls -l /var/lib/jenkins/.kube/
-                  # sudo su - jenkins
-                  # kubectl get pods
-                  # sudo chmod 666 /var/run/docker.sock
-                  # sudo usermod -aG docker jenkins
-                  # sudo chmod 666 /var/run/docker.sock
-                  # sudo su - jenkins
-                  # kubectl get pods
-                  # sudo chmod 666 /var/run/docker.sock
-                  # sudo usermod -aG docker jenkins
-                  # aws configure
-                  # AWS Access Key ID [None]: AKIARHJJNDAYI4MKNZWJ
-                  # AWS Secret Access Key [None]: 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
-                  # Default region name [None]: eu-north-1
-                  # Default output format [None]: json
-                  # aws sts get-caller-identity
-                  # aws eks update-kubeconfig --region eu-north-1 --name my-eks
-                  # sudo su - jenkins
-                  # kubectl get pods
-                  # aws configure
-                  # aws sts get-caller-identity
-                  # sudo mkdir -p /var/lib/jenkins/.aws
-                  # sudo cp /home/ec2-user/.aws/credentials /var/lib/jenkins/.aws/
-                  # sudo cp /home/ec2-user/.aws/config /var/lib/jenkins/.aws/
-                  # sudo chown -R jenkins:jenkins /var/lib/jenkins/.aws
-                  # sudo chmod 600 /var/lib/jenkins/.aws/credentials
-                  # sudo chmod 600 /var/lib/jenkins/.aws/config
-                  # kubectl get nodes
-                  # sudo su - jenkins
-                  # kubectl get pods
-                  # sudo chmod 666 /var/run/docker.sock
-                  # sudo usermod -aG docker jenkins
-
                   sudo usermod -aG docker ec2-user
                   sudo usermod -aG docker jenkins
                   sudo chmod 666 /var/run/docker.sock
