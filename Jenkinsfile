@@ -47,6 +47,7 @@ stages {
             dir('App') {
 
                 sh """
+                pwd
                 ls -la
                 ls -la k8s
 
