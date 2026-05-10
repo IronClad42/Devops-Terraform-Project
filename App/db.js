@@ -17,7 +17,7 @@ const conn = mysql.createPool({
 
 // const exe = util.promisify(conn.query).bind(conn);
 
-async () => exe(sql , value = []) {
+async function exe(sql , value = []) {
     var [ rows ] = await conn.query(sql , value);
     return rows
 }
