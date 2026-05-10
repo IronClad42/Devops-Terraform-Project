@@ -43,7 +43,7 @@ stages {
 
     stage('Deploy to Kubernetes') {
         steps {
-            dir('k8s') {
+            dir('K8s') {
 
                 sh """
                 pwd
