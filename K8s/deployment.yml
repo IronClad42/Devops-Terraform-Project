@@ -19,7 +19,7 @@ spec:
         - containerPort: 1000
         env:
         - name: DB_HOST
-          value: "terraform-20260510060949865500000016.cdkw8ieiq8q5.eu-north-1.rds.amazonaws.com"
+          value: "terraform-20260512071440185700000015.cdkw8ieiq8q5.eu-north-1.rds.amazonaws.com"
         - name: DB_USER
           value: "krishna"
         - name: DB_PASSWORD
