@@ -52,9 +52,13 @@ stages {
 
                 ls -la 
 
-                sed -i 's|IMAGE|${DOCKER_IMAGE}:${TAG}|g' deployment.yml
+                // sed -i 's|IMAGE|${DOCKER_IMAGE}:${TAG}|g' deployment.yml
 
-                kubectl apply -f .
+                // kubectl apply -f .
+
+                kubectl set image deployment/app app=${DOCKER_IMAGE}:${TAG}
+
+                kubectl rollout status deployment/app
                 """
             }
         }
